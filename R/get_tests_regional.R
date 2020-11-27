@@ -9,7 +9,8 @@
 #'
 #' @examples
 #' # get all the data
-#' df <- get_tests_regional(get_news())
+#' news <- get_news()
+#' df <- get_tests_federal(news)
 #' @export
 
 get_tests_regional <- function(news) {

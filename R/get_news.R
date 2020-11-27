@@ -3,24 +3,35 @@
 #' Scrapes links to news from the Rospotrebnadzor website
 #' @import rvest dplyr stringr lubridate xml2
 #'
+#' @param pages a vector of pages to return, for example `1`. if this argument is set to `NULL`, all pages are returned. Note that it might take a while.
+#'
 #' @return A data frame with self-explanatory columns.
 #'
 #' @examples
-#' # get the news
-#' df <- get_news()
+#' # get all the news
+#' df <- get_news(pages = NULL)
 #' @export
 
-get_news <- function() {
-  newslinks_1 <- get_newslinks(1)
-  news <- list()
-  i <- 2
-  repeat {
-    newslinks <- get_newslinks(i)
-    if (identical(newslinks, newslinks_1)) break
-    news <- c(news, list(newslinks))
-    i <- i + 1
+get_news <- function(pages = NULL) {
+
+  if (is.null(pages)) {
+    news <- list()
+    newslinks_1 <- get_newslinks(1)
+    i <- 2
+    repeat {
+      newslinks <- get_newslinks(i)
+      if (identical(newslinks, newslinks_1)) break
+      news <- c(news, list(newslinks))
+      i <- i + 1
+    }
+    news <- c(list(newslinks_1), news)
+  } else {
+    news <- vector("list", length(pages))
+    for (i in seq_along(pages)) {
+      news[[i]] <- get_newslinks(pages[i])
+    }
   }
-  news <- c(list(newslinks_1), news)
+
   news <- do.call(rbind, news)
   news <-
     news %>%

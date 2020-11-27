@@ -8,8 +8,9 @@
 #' @return A data frame with self-explanatory columns.
 #'
 #' @examples
-#' # get all the data from the first page
-#' df <- get_tests_federal(get_news())
+#' # get all the data from the first page of news
+#' news <- get_news(pages = 1)
+#' df <- get_tests_federal(news)
 #' @export
 
 

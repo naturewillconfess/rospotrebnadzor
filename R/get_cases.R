@@ -9,7 +9,8 @@
 #'
 #' @examples
 #' # get all the data
-#' df <- get_cases(get_news())
+#' news <- get_news()
+#' df <- get_cases(news)
 #' @export
 
 get_cases <- function(news) {
