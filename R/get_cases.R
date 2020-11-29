@@ -12,11 +12,10 @@
 #' news <- get_news()
 #' df <- get_cases(news)
 #' @export
-
+#'
 get_cases <- function(news) {
   news$date <- ymd(news$date)
-  notablez <- paste0("\\Qhttps://www.rospotrebnadzor.ru/about/info/news/news_details.php?ELEMENT_ID=", c(14087, 14045, 14033), "\\E", collapse = "|")
-  news <- news[str_detect(news$names, "О подтвержденных случаях новой коронавирусной инфекции") & news$date > ymd("2020-03-16") & !str_detect(news$url, notablez), ]
+  news <- news[str_detect(news$names, "О подтвержденных случаях новой коронавирусной инфекции") & news$date > ymd("2020-03-18") & news$date != ymd("2020-03-23"), ]
   caselist <- vector("list", nrow(news))
   xpath <- c(
     "//*[contains(text(), ' - ')][1]|//*[contains(text(), ' - ')][1]/following-sibling::*",
@@ -29,7 +28,7 @@ get_cases <- function(news) {
     "//*[contains(text(), 'Москва')][1]|//*[contains(text(), 'Москва')][1]/following-sibling::*" %>% iconv("windows-1251", "UTF-8")
   )
 
-  caselist <- mapply(function(url, dater) {
+  caselist <- mapply(function(url, date) {
     page <- xml2::read_html(url)
     data <- 0
     j <- 1
@@ -37,15 +36,17 @@ get_cases <- function(news) {
       data <-
         page %>%
         html_nodes(xpath = xpath[j]) %>%
-        html_text()
+        html_text() %>%
+        str_remove_all("\\r") %>%
+        str_remove_all("\\n") %>%
+        str_remove_all("^[:space:]*$")
+      data <- data[data != ""]
       j <- j + 1
     }
 
 
     data <-
       data %>%
-      str_remove_all("\\r") %>%
-      str_remove_all("\\n") %>%
       str_remove_all("[0-9]+\\.") %>%
       str_replace_all("[:space:]{2,}", " ") %>%
       trimws() %>%
@@ -54,7 +55,7 @@ get_cases <- function(news) {
 
     data <- as.data.frame(do.call(rbind, data)[, -1])
     colnames(data) <- c("region", "cases")
-    data$dater <- dater
+    data$date <- date
     data
   }, news$url, news$date, SIMPLIFY = FALSE)
 
@@ -69,6 +70,12 @@ get_cases <- function(news) {
       cases = cases %>% str_remove_all("[:space:]"),
       region = case_when(
         region == "Ненецкий автономный округ" ~ "Ненецкий АО",
+        region == "Ямало-Ненецкий автономный округ" ~ "Ямало-Ненецкий АО",
+        region == "Ханты-Мансийский автономный округ" ~ "Ханты-Мансийский АО",
+        region == "Чукотский автономный округ" ~ "Чукотский АО",
+        region == "Еврейская автономная область" ~ "Еврейская АО",
+        region == "Республика Северная Осетия-Алания" ~ "Республика Северная Осетия",
+        region == "Чувашская Республика" ~ "Республика Чувашия",
         region == "Республика Горный Алтай" ~ "Республика Алтай",
         TRUE ~ region
       )

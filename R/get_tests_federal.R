@@ -17,10 +17,10 @@
 get_tests_federal <- function(news) {
   news <-
     news %>%
-    filter(str_detect(names, "Информационный бюллетень о ситуации")) %>%
+    filter(str_detect(names, "рмационный бюллетень о ситуации")) %>%
     mutate(date = ymd(date))
 
-  testlist <- mapply(function(url, dater) {
+  testlist <- mapply(function(url, date) {
     tests <-
       url %>%
       xml2::read_html() %>%
@@ -30,7 +30,7 @@ get_tests_federal <- function(news) {
       `[`(str_detect(., "[0-9]"))
 
     if (length(tests) == 0) {
-      return(data.frame(tests = NA, dater = dater))
+      return(data.frame(tests = NA, date = date))
     }
     if (length(tests) > 1) tests <- tests[str_detect(tests, "проведен.*лабораторн")]
 
@@ -47,10 +47,10 @@ get_tests_federal <- function(news) {
       if (tests[3] == "") tests[3] <- 0
       tests <- sum(as.numeric(tests) * c(10^6, 10^3, 1))
     }
-    return(data.frame(tests = tests, dater = dater))
+    return(data.frame(tests = tests, date = date))
   }, news$url, news$date, SIMPLIFY = FALSE)
 
   tests <- do.call(rbind, testlist)
-  tests <- arrange(tests, dater)
+  tests <- arrange(tests, date)
   tests
 }

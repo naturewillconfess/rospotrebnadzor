@@ -16,6 +16,7 @@ A data frame with self-explanatory columns.
 Scrapes data on the cumulative number of COVID-19 tests conducted in Russia from Rospotrebnadzor website
 }
 \examples{
-# get all the data from the first page
-df <- get_tests_federal(get_news())
+# get all the data from the first page of news
+news <- get_news(pages = 1)
+df <- get_tests_federal(news)
 }

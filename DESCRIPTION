@@ -1,5 +1,5 @@
 Package: rucovidr
-Title: Scrapes COVID-19 data from the Rospotrebnadzor website.
+Title: Scrapes COVID-19 data from the Rospotrebnadzor website
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Samvel",
@@ -18,3 +18,12 @@ Imports:
     stringr,
     lubridate,
     xml2
+Suggests: 
+    knitr,
+    rmarkdown,
+    zoo,
+    ggplot2,
+    tidyr
+VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)

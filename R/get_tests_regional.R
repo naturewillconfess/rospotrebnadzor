@@ -19,7 +19,7 @@ get_tests_regional <- function(news) {
     filter(str_detect(names, "О тестировании на новую коронавирусную инфекцию в регионах")) %>%
     mutate(date = ymd(date))
 
-  testlist <- mapply(function(url, dater) {
+  testlist <- mapply(function(url, date) {
     tables <-
       url %>%
       xml2::read_html() %>%
@@ -31,8 +31,8 @@ get_tests_regional <- function(news) {
     colnames(percapita) <- c("region", "percapita")
     colnames(abs) <- c("region", "abs")
 
-    df <- full_join(percapita, abs)
-    df$dater <- dater
+    df <- full_join(percapita, abs, by = "region")
+    df$date <- date
     df
   }, news$url, news$date, SIMPLIFY = FALSE)
 
@@ -54,7 +54,7 @@ get_tests_regional <- function(news) {
       percapita = as.numeric(str_replace_all(percapita, ",", "\\.")),
       abs = as.numeric(str_replace_all(abs, ",", "\\."))
     ) %>%
-    group_by(region, dater) %>%
+    group_by(region, date) %>%
     summarize(
       percapita = ifelse(all(is.na(percapita)), NA, percapita[!is.na(percapita)]),
       abs = ifelse(all(is.na(abs)), NA, abs[!is.na(abs)])

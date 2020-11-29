@@ -17,5 +17,6 @@ Scrapes data on the cumulative number of COVID-19 tests conducted in Russian reg
 }
 \examples{
 # get all the data
-df <- get_tests_regional(get_news())
+news <- get_news()
+df <- get_tests_federal(news)
 }

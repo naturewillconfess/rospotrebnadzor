@@ -17,5 +17,6 @@ Scrapes data on the number of new COVID-19 cases conducted in Russian regions fr
 }
 \examples{
 # get all the data
-df <- get_cases(get_news())
+news <- get_news()
+df <- get_cases(news)
 }

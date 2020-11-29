@@ -1,0 +1,98 @@
+---
+title: "COVID-19 in Russia"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{COVID-19 in Russia}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, echo = FALSE, message = FALSE}
+library(rucovidr)
+library(dplyr)
+library(zoo)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+library(xml2)
+data(old_cases, package = "rucovidr")
+```
+
+
+
+# Cases and testing in Russia
+
+Let's first scrape and wrangle the necessary data - regional data on new cases and federal data on the tests:
+
+```{r, fig.align='center', fig.show = 'hold', fig.cap='3 key plots describing COVID-19 dynamics on a federal level', out.width="33%"}
+news <- get_news()
+tests_fed <- get_tests_federal(news)
+cases <- get_cases(news)
+cases <- rbind(old_cases, cases)
+
+tests_fed <- tests_fed[-c(1:(which(!is.na(tests_fed$tests))[1]-1)),]
+tests_fed$tests <-  round(na.approx(tests_fed$tests))
+tests_fed$tests <-  c(NA, tests_fed$tests[-1] - tests_fed$tests[-length(tests_fed$tests)])
+###correcting apparent errors in the data, specifically zero and negative values. First two weeks are so messy it's not even worth analyzing imo
+tests_fed <- tests_fed[-c(1:11),]
+tests_fed$tests[tests_fed$date %in% ymd(c("2020-03-13", "2020-03-14"))] <- sum(tests_fed$tests[tests_fed$date %in% ymd(c("2020-03-13", "2020-03-14"))])/2
+tests_fed$tests[tests_fed$date %in% ymd(c("2020-03-31", "2020-04-01", "2020-04-02"))] <- sum(tests_fed$tests[tests_fed$date %in% ymd(c("2020-03-31", "2020-04-01", "2020-04-02"))])/3
+tests_fed$tests[tests_fed$date %in% ymd(c("2020-08-22", "2020-08-23"))] <- sum(tests_fed$tests[tests_fed$date %in% ymd(c("2020-08-22", "2020-08-23"))])/2
+
+
+df_fed <- 
+  cases %>%
+  group_by(date) %>%
+  summarize(cases = sum(as.numeric(cases), na.rm = TRUE), .groups = "drop") %>%
+  full_join(tests_fed) %>%
+  mutate(cases = replace_na(cases, 0),
+         positivity = cases/tests) %>%
+  arrange(date) 
+
+ggplot(df_fed, aes(date, cases)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+ggplot(df_fed, aes(date, tests)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+ggplot(df_fed, aes(date, positivity)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+
+```
+
+# Cases and testing in Moscow
+
+```{r, fig.align='center', fig.show = 'hold', fig.cap='3 key plots describing COVID-19 dynamics in Moscow', out.width="33%"}
+tests_reg <- get_tests_regional(news)
+tr1 <- tests_reg
+tests_reg <- tr1
+
+tests_moscow <- 
+  tests_reg %>%
+  complete(nesting(region, date)) %>%
+  filter(region == "Москва") %>%
+  mutate(abs = c(percapita[1], abs[-1]),
+         abs = c(NA, abs[-1] - abs[-length(abs)])) %>% ### a mistake in the first regional report
+  select(-percapita)
+
+df_moscow <-
+  cases %>%
+  filter(region == "Москва") %>%
+  full_join(tests_moscow) %>%
+  arrange(date) %>%
+  mutate(cases = as.numeric(cases),
+         cases_rollsum = c(rep(0, 6), rollsum(cases, 7))) %>%
+  filter(!is.na(abs)) %>%
+  select(-cases) %>%
+  rename(cases = cases_rollsum,
+         tests = abs) %>%
+  mutate(positivity = cases/tests)
+
+ggplot(df_moscow, aes(date, cases)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+ggplot(df_moscow, aes(date, tests)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+ggplot(df_moscow, aes(date, positivity)) + geom_smooth() + geom_point(alpha = 0.2, colour = "red")
+
+```
+
